@@ -16,10 +16,6 @@ postgres_data/
 .env
 *.log
 
-# Data (too large for git)
-data/raw/*.csv
-data/processed/*.csv
-
 # Models
 *.pkl
 *.joblib

@@ -30,7 +30,7 @@ U.S. Small Business Administration website.
 - ~~python venv~~
 - ~~docker setup~~
 - ~~postgre setup within docker~~
-- test db connection (both setup connection + actual db)
+- ~~test db connection~~
 - create proj struct
 - build etl pipeline
 - equity analysis (1)
