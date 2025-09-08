@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+
+# Database
+postgres_data/
+
+# Environment
+.env
+*.log
+
+# Data (too large for git)
+data/raw/*.csv
+data/processed/*.csv
+
+# Models
+*.pkl
+*.joblib
+
+# Mac
+.DS_Store
