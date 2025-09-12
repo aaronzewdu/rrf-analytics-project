@@ -42,7 +42,7 @@ Highlights:
   - is_rural: 1 if RuralUrbanIndicator == 'R', else 0
   - is_disadvantaged_core: 1 if any of {SocioeconomicIndicator, WomenOwnedIndicator, VeteranIndicator, LMIIndicator, HubZoneIndicator} == 'Y'
   - is_disadvantaged: logical OR of is_disadvantaged_core and is_rural
-  - {purpose}_binary: one binary column per grant purpose listed in GRANT_PURPOSE_FIELDS
+  - {purpose}_binary: one binary column per grant purpose listed in GRANT_PURPOSE_FIELDS (10 total purposes)
 - Persistence: writes a timestamped CSV to data/processed and a full snapshot to PostgreSQL (table: rrf_data, replace on each run)
 
 Non‑elementary logic worth noting:

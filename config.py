@@ -33,9 +33,11 @@ COLUMN_ALIASES = {
     'HubzoneIndicator': 'HubZoneIndicator',  # Fix capitalization
 }
 
+# Grant purpose fields from the raw data (10 total)
+# Note: outdoor seating has a different naming pattern (grant_purp_ instead of grant_purpose_)
 GRANT_PURPOSE_FIELDS = [
     "grant_purpose_payroll", "grant_purpose_rent", "grant_purpose_debt",
     "grant_purpose_food", "grant_purpose_operations", "grant_purpose_supplies", 
-    "grant_purpose_utility", "grant_purp_cons_outdoor_seating",
+    "grant_purpose_utility", "grant_purp_cons_outdoor_seating",  # Different prefix pattern
     "grant_purpose_covered_supplier", "grant_purpose_maintenance_indoor"
 ]
