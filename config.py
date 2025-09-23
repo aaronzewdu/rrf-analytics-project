@@ -1,6 +1,5 @@
-"""
-Simple configuration for RRF Analytics Project
-"""
+#Simple configs
+
 from pathlib import Path
 
 # Paths
@@ -9,7 +8,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
-# Database
+# DB
 DB_CONFIG = "postgresql://postgres:postgres@localhost:5432/rrf_analytics"
 
 # Field mappings (using corrected column names after alias processing)

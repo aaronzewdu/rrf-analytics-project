@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""
-ETL Pipeline for RRF Analytics Project
-"""
+
+# etl pipeline
+
 import pandas as pd
 from pathlib import Path
 from datetime import datetime

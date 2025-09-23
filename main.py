@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 Restaurant Revitalization Fund Analytics Project
 
@@ -9,10 +10,6 @@ Goals:
 1. Assess if disadvantaged businesses received proportional funding
 2. Predict grant purposes based on business characteristics
 
-Tech Stack: Python, PostgreSQL, Docker, pandas, scikit-learn
-
-Current Status: Phase 1 Complete (ETL + Basic Analysis)
-Finding: Disadvantaged businesses receive 87% of non-disadvantaged funding
 """
 
 def main():

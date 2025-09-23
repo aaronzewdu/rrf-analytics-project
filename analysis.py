@@ -2,61 +2,83 @@
 """
 Analysis for RRF Analytics Project
 """
+import os
 import pandas as pd
+import matplotlib
+# Use non-interactive backend unless SHOW_PLOTS=1
+if os.environ.get("SHOW_PLOTS", "0") != "1":
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
+import json
+import textwrap
 
 from config import PROCESSED_DATA_DIR, DB_CONFIG, DEMOGRAPHIC_FIELDS, RURAL_FIELD_MAPPING, GRANT_PURPOSE_FIELDS
+from utils import setup_logger
+from purpose_helpers import list_purpose_binary_cols, clean_purpose_label
 
-# Helper function for cleaning purpose names
-def _clean_purpose_name(col, keep_underscore=False):
-    """Clean purpose column names for display"""
-    # Remove common prefixes and suffixes
-    name = col.replace('_binary', '')
-    name = name.replace('grant_purpose_', '').replace('grant_purp_', '')
-    
-    # Special handling for outdoor seating construction
-    name = name.replace('cons_outdoor_seating', 'outdoor_seating_construction')
-    
-    # Convert underscores to spaces unless requested to keep them
-    if not keep_underscore:
-        name = name.replace('_', ' ')
-    
-    return name.title()
+# Show plots only if explicitly requested via env var
+# export SHOW_PLOTS=1 to enable interactive windows
+
+# Setup logger
+logger = setup_logger(__name__)
+
+def maybe_show():
+    if os.environ.get("SHOW_PLOTS", "0") == "1":
+        plt.show()
+
 
 def load_data():
     """Load processed data"""
+    db_error = None
     try:
         engine = create_engine(DB_CONFIG)
         df = pd.read_sql("SELECT * FROM rrf_data", engine)
-        print(f"Loaded {len(df)} records from database")
         return df
-    except:
-        processed_files = list(PROCESSED_DATA_DIR.glob("rrf_processed_*.csv"))
-        if not processed_files:
-            raise FileNotFoundError("No processed data found. Run ETL first.")
-        latest_file = max(processed_files, key=lambda f: f.stat().st_mtime)
-        df = pd.read_csv(latest_file)
-        print(f"Loaded {len(df)} records from {latest_file}")
-        return df
+    except SQLAlchemyError as e:
+        db_error = e
+    except Exception as e:
+        # Capture any other runtime errors during DB load (e.g., driver issues)
+        db_error = e
+
+    # Fallback to latest processed CSV if DB load failed
+    processed_files = list(PROCESSED_DATA_DIR.glob("rrf_processed_*.csv"))
+    if not processed_files:
+        raise FileNotFoundError(
+            f"No processed data found and DB query failed. Run ETL first. Original DB error: {db_error}"
+        ) from db_error
+    latest_file = max(processed_files, key=lambda f: f.stat().st_mtime)
+    df = pd.read_csv(latest_file)
+    return df
 
 def analyze_demographics(df):
     """Analyze demographics"""
-    print("\n=== DEMOGRAPHICS ===")
     if 'is_disadvantaged' not in df.columns:
-        return
+        return {}
     
     total = len(df)
     disadvantaged = df['is_disadvantaged'].sum()
-    print(f"Disadvantaged businesses: {disadvantaged:,} ({disadvantaged/total:.1%})")
+    
+    results = {
+        "total_businesses": int(total),
+        "disadvantaged_count": int(disadvantaged),
+        "disadvantaged_pct": round(disadvantaged/total * 100, 1)
+    }
     
     # Demographic categories
+    demographics = {}
     for col, label in {**DEMOGRAPHIC_FIELDS, **RURAL_FIELD_MAPPING}.items():
         if col in df.columns:
             count = (df[col] == 'Y').sum() if col in DEMOGRAPHIC_FIELDS else df[col].sum()
-            print(f"{label}: {count:,} ({count/total:.1%})")
+            demographics[label] = {
+                "count": int(count),
+                "pct": round(count/total * 100, 1)
+            }
+    results["demographics"] = demographics
+    return results
 
 def analyze_descriptive_stats(df):
     """Comprehensive descriptive statistics"""
@@ -98,26 +120,27 @@ def analyze_data_quality(df):
 
 def analyze_equity(df):
     """Core equity analysis"""
-    print("\n=== EQUITY ANALYSIS ===")
     if not {'is_disadvantaged', 'GrantAmount'}.issubset(df.columns):
-        print("Missing required columns")
-        return
+        return {}
     
     grant_amounts = pd.to_numeric(df['GrantAmount'], errors='coerce')
-    groups = {'DISADVANTAGED': df['is_disadvantaged'] == 1, 
-              'NON-DISADVANTAGED': df['is_disadvantaged'] == 0}
+    groups = {'disadvantaged': df['is_disadvantaged'] == 1, 
+              'non_disadvantaged': df['is_disadvantaged'] == 0}
     
-    stats = {}
+    results = {}
     for name, mask in groups.items():
         data = grant_amounts[mask].dropna()
-        stats[name] = (len(data), data.mean(), data.median())
-        print(f"{name}: {len(data):,} businesses")
-        print(f"  Mean grant: ${data.mean():,.0f}")
-        print(f"  Median grant: ${data.median():,.0f}")
+        results[name] = {
+            "count": int(len(data)),
+            "mean_grant": int(data.mean()),
+            "median_grant": int(data.median())
+        }
     
-    if stats['NON-DISADVANTAGED'][1] > 0:
-        ratio = stats['DISADVANTAGED'][1] / stats['NON-DISADVANTAGED'][1]
-        print(f"\nEQUITY RATIO: {ratio:.2f} (disadvantaged get {ratio:.0%} of non-disadvantaged funding)")
+    if results['non_disadvantaged']['mean_grant'] > 0:
+        ratio = results['disadvantaged']['mean_grant'] / results['non_disadvantaged']['mean_grant']
+        results["equity_ratio"] = round(ratio, 3)
+    
+    return results
 
 def analyze_geographic_patterns(df):
     """Geographic analysis"""
@@ -151,7 +174,7 @@ def analyze_geographic_patterns(df):
 def analyze_grant_purposes(df):
     """Grant purpose analysis"""
     print("\n=== GRANT PURPOSE ANALYSIS ===")
-    purpose_cols = [col for col in df.columns if col.endswith('_binary') and ('purpose' in col or 'purp' in col)]
+    purpose_cols = list_purpose_binary_cols(df)
     if not purpose_cols:
         return
     
@@ -160,13 +183,13 @@ def analyze_grant_purposes(df):
     
     print("\nGrant purpose frequency:")
     for col, count in purposes.items():
-        name = col.replace('_binary', '').replace('grant_purpose_', '').replace('grant_purp_', '').title()
+        name = clean_purpose_label(col)
         print(f"  {name}: {count:,} ({count/total:.1%})")
     
     # Co-occurrence analysis
     print("\nTop purpose combinations:")
-    df['purpose_count'] = df[purpose_cols].sum(axis=1)
-    for count, freq in df['purpose_count'].value_counts().sort_index().items():
+    purpose_count_series = df[purpose_cols].sum(axis=1)
+    for count, freq in purpose_count_series.value_counts().sort_index().items():
         print(f"  {count} purposes: {freq:,} businesses ({freq/total:.1%})")
     
     # Purpose patterns by status
@@ -177,12 +200,78 @@ def analyze_grant_purposes(df):
             if not subset.empty:
                 print(f"  {label} top purposes:")
                 for col, pct in subset[purpose_cols].mean().nlargest(3).items():
-                    name = col.replace('_binary', '').replace('grant_purpose_', '').title()
+                    name = clean_purpose_label(col)
                     print(f"    {name}: {pct:.1%}")
+
+def compute_and_save_summary_metrics(df):
+    """Compute and persist comprehensive analysis results."""
+    PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Collect all analysis results
+    summary = {
+        "records": int(len(df))
+    }
+    
+    # Add demographics analysis
+    demographics_results = analyze_demographics(df)
+    if demographics_results:
+        summary["demographics"] = demographics_results
+    
+    # Add equity analysis 
+    equity_results = analyze_equity(df)
+    if equity_results:
+        summary["equity"] = equity_results
+    
+    # Add basic grant statistics
+    if 'GrantAmount' in df.columns:
+        grants = pd.to_numeric(df['GrantAmount'], errors='coerce').dropna()
+        summary["grant_statistics"] = {
+            "mean": int(grants.mean()),
+            "median": int(grants.median()),
+            "min": int(grants.min()),
+            "max": int(grants.max())
+        }
+
+    # Add data that was previously in plots 01, 02, 03
+    
+    # Plot 01 data: Enhanced grant equity details
+    if {'GrantAmount', 'is_disadvantaged'}.issubset(df.columns):
+        df_plot = df.copy()
+        df_plot['GrantAmount_num'] = pd.to_numeric(df_plot['GrantAmount'], errors='coerce')
+        df_plot = df_plot[df_plot['GrantAmount_num'] > 0].dropna(subset=['GrantAmount_num'])
+        
+        stats = df_plot.groupby('is_disadvantaged')['GrantAmount_num'].agg(['median', 'mean', 'count']).round(0)
+        
+        if 1 in stats.index and 0 in stats.index:
+            equity_ratio_median = stats.loc[1, 'median'] / stats.loc[0, 'median']
+            summary["grant_equity_details"] = {
+                "equity_ratio_median": round(equity_ratio_median, 3),
+                "interpretation": f"Disadvantaged businesses receive {equity_ratio_median:.0%} of non-disadvantaged median funding levels"
+            }
+    
+    # Plot 02 data: Demographics percentages (already covered in demographics section)
+    
+    # Plot 03 data: State distribution
+    if 'BusinessState' in df.columns:
+        states = df['BusinessState'].value_counts()
+        states_data = []
+        for state, count in states.items():
+            states_data.append({
+                'state': str(state),
+                'grant_count': int(count)
+            })
+        
+        summary["state_distribution"] = {
+            "total_states": len(states),
+            "states": states_data
+        }
+
+    # Write summary JSON
+    (PROCESSED_DATA_DIR / 'analysis_summary.json').write_text(json.dumps(summary, indent=2))
+    return summary
 
 def create_individual_plots(df):
     """Create individual plots for better customization"""
-    print("\n=== CREATING INDIVIDUAL PLOTS ===")
     
     # Set global style
     plt.style.use('seaborn-v0_8')
@@ -192,329 +281,68 @@ def create_individual_plots(df):
     PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
     plots_created = []
     
-    # 1. Grant Amount Distribution
-    if 'GrantAmount' in df.columns:
-        plt.figure(figsize=(10, 6))
-        grant_data = pd.to_numeric(df['GrantAmount'], errors='coerce').dropna()
-        # Focus on where most data actually is (0-2M)
-        plt.hist(grant_data / 1000, bins=60, alpha=0.8, color='steelblue', edgecolor='black', range=(0, 2000))
-        plt.title('Restaurant Revitalization Fund - Grant Amount Distribution', fontsize=14, fontweight='bold')
-        plt.xlabel('Grant Amount (Thousands $)', fontsize=12)
-        plt.ylabel('Number of Businesses', fontsize=12)
-        plt.grid(True, alpha=0.3)
-        # Add summary stats as text
-        mean_val = grant_data.mean() / 1000
-        median_val = grant_data.median() / 1000
-        plt.axvline(mean_val, color='red', linestyle='--', alpha=0.7, label=f'Mean: ${mean_val:.0f}K')
-        plt.axvline(median_val, color='orange', linestyle='--', alpha=0.7, label=f'Median: ${median_val:.0f}K')
-        plt.legend()
-        plt.xlim(0, 2000)  # Focus on relevant range
-        plot_file = PROCESSED_DATA_DIR / "01_grant_distribution.png"
-        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-        plots_created.append(plot_file.name)
-        plt.show()
-        plt.close()
     
-    # 2. Grant Amount Distribution by Status (3-Panel Comprehensive Analysis)
-    if {'GrantAmount', 'is_disadvantaged'}.issubset(df.columns):
-        # Create figure with three subplots
-        fig = plt.figure(figsize=(18, 8))
-        ax1 = plt.subplot(1, 3, 1)
-        ax2 = plt.subplot(1, 3, 2)
-        ax3 = plt.subplot(1, 3, 3)
-        
-        # Prepare data
-        df_plot = df.copy()
-        df_plot['GrantAmount_num'] = pd.to_numeric(df_plot['GrantAmount'], errors='coerce') / 1000  # Convert to thousands
-        df_plot = df_plot.dropna(subset=['GrantAmount_num'])
-        df_plot['Status'] = df_plot['is_disadvantaged'].map({0: 'Non-Disadvantaged', 1: 'Disadvantaged'})
-        
-        # Calculate statistics for annotations
-        stats = df_plot.groupby('Status')['GrantAmount_num'].agg(['mean', 'median', 'std', 'count'])
-        
-        # LEFT PLOT: Violin plot showing distribution shape
-        violin_parts = ax1.violinplot(
-            [df_plot[df_plot['Status'] == 'Non-Disadvantaged']['GrantAmount_num'].values,
-             df_plot[df_plot['Status'] == 'Disadvantaged']['GrantAmount_num'].values],
-            positions=[0, 1],
-            widths=0.7,
-            showmeans=True,
-            showmedians=True,
-            showextrema=False
-        )
-        
-        # Style the violin plot
-        colors = ['lightcoral', 'lightblue']
-        for i, pc in enumerate(violin_parts['bodies']):
-            pc.set_facecolor(colors[i])
-            pc.set_alpha(0.7)
-            pc.set_edgecolor('black')
-        
-        # Style mean and median lines
-        violin_parts['cmeans'].set_edgecolor('red')
-        violin_parts['cmeans'].set_linewidth(2)
-        violin_parts['cmedians'].set_edgecolor('black')
-        violin_parts['cmedians'].set_linewidth(2)
-        
-        # Add labels and formatting for left plot
-        ax1.set_xticks([0, 1])
-        ax1.set_xticklabels(['Non-Disadv.', 'Disadvantaged'], fontsize=10)
-        ax1.set_ylabel('Grant Amount ($K)', fontsize=11)
-        ax1.set_title('Distribution Shape', fontsize=12, fontweight='bold')
-        ax1.grid(True, alpha=0.3, axis='y')
-        ax1.set_ylim(0, 1500)  # Focus on main distribution
-        
-        # Add count labels
-        for i, (status, row) in enumerate(stats.iterrows()):
-            ax1.text(i, -100, f'n = {int(row["count"]):,}', ha='center', fontsize=10, style='italic')
-        
-        # Add statistical annotations on the violin plot
-        for i, (status, row) in enumerate(stats.iterrows()):
-            ax1.text(i, row['mean'] + 50, f'μ = ${row["mean"]:.0f}K', 
-                    ha='center', fontsize=10, fontweight='bold')
-            ax1.text(i, row['median'] - 50, f'M = ${row["median"]:.0f}K', 
-                    ha='center', fontsize=10)
-        
-        # MIDDLE PLOT: Comparative bar chart with key metrics
-        metrics = ['Mean', 'Median', '75th %ile']
-        x_pos = np.arange(len(metrics))
-        width = 0.35
-        
-        # Calculate metrics
-        non_disadv_metrics = [
-            stats.loc['Non-Disadvantaged', 'mean'],
-            stats.loc['Non-Disadvantaged', 'median'],
-            df_plot[df_plot['Status'] == 'Non-Disadvantaged']['GrantAmount_num'].quantile(0.75)
-        ]
-        disadv_metrics = [
-            stats.loc['Disadvantaged', 'mean'],
-            stats.loc['Disadvantaged', 'median'],
-            df_plot[df_plot['Status'] == 'Disadvantaged']['GrantAmount_num'].quantile(0.75)
-        ]
-        
-        # Create grouped bar chart
-        bars1 = ax2.bar(x_pos - width/2, non_disadv_metrics, width, 
-                       label='Non-Disadvantaged', color='lightcoral', edgecolor='darkred', alpha=0.7)
-        bars2 = ax2.bar(x_pos + width/2, disadv_metrics, width,
-                       label='Disadvantaged', color='lightblue', edgecolor='darkblue', alpha=0.7)
-        
-        # Add value labels on bars
-        for bars in [bars1, bars2]:
-            for bar in bars:
-                height = bar.get_height()
-                ax2.text(bar.get_x() + bar.get_width()/2., height + 10,
-                        f'${height:.0f}K', ha='center', va='bottom', fontweight='bold')
-        
-        # Format middle plot
-        ax2.set_xlabel('Statistical Measure', fontsize=11)
-        ax2.set_ylabel('Grant Amount ($K)', fontsize=11)
-        ax2.set_title('Per-Business Metrics', fontsize=12, fontweight='bold')
-        ax2.set_xticks(x_pos)
-        ax2.set_xticklabels(metrics, fontsize=10)
-        ax2.legend(fontsize=10, loc='upper left')
-        ax2.grid(True, alpha=0.3, axis='y')
-        
-        # Add equity ratio annotation
-        equity_ratio = stats.loc['Disadvantaged', 'mean'] / stats.loc['Non-Disadvantaged', 'mean']
-        ax2.text(0.5, 0.95, f'Equity Ratio: {equity_ratio:.2f}',
-                transform=ax2.transAxes, ha='center', va='top',
-                bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.3),
-                fontsize=10, fontweight='bold')
-        
-        # THIRD PLOT: Total Fund Allocation
-        # Calculate total funds received by each group
-        total_disadv = (df_plot[df_plot['is_disadvantaged'] == 1]['GrantAmount_num'].sum())
-        total_non_disadv = (df_plot[df_plot['is_disadvantaged'] == 0]['GrantAmount_num'].sum())
-        total_funds = total_disadv + total_non_disadv
-        
-        # Calculate percentages
-        pct_disadv = (total_disadv / total_funds) * 100
-        pct_non_disadv = (total_non_disadv / total_funds) * 100
-        
-        # Create nested pie chart (donut)
-        sizes_outer = [pct_non_disadv, pct_disadv]
-        colors_outer = ['lightcoral', 'lightblue']
-        explode = (0.05, 0)  # Slightly separate non-disadvantaged
-        
-        wedges, texts, autotexts = ax3.pie(sizes_outer, explode=explode, labels=None,
-                                           colors=colors_outer, autopct='%1.1f%%',
-                                           shadow=False, startangle=90,
-                                           wedgeprops=dict(width=0.5, edgecolor='black'))
-        
-        # Add center circle for donut effect
-        centre_circle = plt.Circle((0, 0), 0.50, fc='white', linewidth=2, edgecolor='black')
-        ax3.add_artist(centre_circle)
-        
-        # Add title and labels
-        ax3.set_title('Total Fund Allocation', fontsize=12, fontweight='bold')
-        
-        # Add text in center with total
-        ax3.text(0, 0.1, f'Total:\n${total_funds/1000:.0f}M', 
-                ha='center', va='center', fontsize=11, fontweight='bold')
-        ax3.text(0, -0.15, f'({len(df_plot):,} grants)', 
-                ha='center', va='center', fontsize=9, style='italic')
-        
-        # Add legend with actual dollar amounts
-        legend_labels = [
-            f'Non-Disadvantaged\n${total_non_disadv/1000:.0f}M ({pct_non_disadv:.1f}%)\n{int(stats.loc["Non-Disadvantaged", "count"]):,} businesses',
-            f'Disadvantaged\n${total_disadv/1000:.0f}M ({pct_disadv:.1f}%)\n{int(stats.loc["Disadvantaged", "count"]):,} businesses'
-        ]
-        ax3.legend(wedges, legend_labels, loc='center left', bbox_to_anchor=(1, 0, 0.5, 1),
-                  fontsize=9, frameon=True)
-        
-        # Make the axes equal for circular pie
-        ax3.axis('equal')
-        
-        # Main title for entire figure
-        fig.suptitle('Restaurant Revitalization Fund - Complete Equity Analysis\nIndividual Distribution | Per-Business Metrics | Total Fund Allocation', 
-                    fontsize=14, fontweight='bold', y=1.02)
-        
+    # 4. Purpose Profile: Minimal styling
+    purpose_cols = list_purpose_binary_cols(df)
+    if purpose_cols and 'GrantAmount' in df.columns and 'is_disadvantaged' in df.columns:
+        df_temp = df.copy()
+        df_temp['GrantAmount_num'] = pd.to_numeric(df_temp['GrantAmount'], errors='coerce')
+
+        # Calculate baselines and groups
+        pooled_sel_baseline = df_temp[purpose_cols].sum().sum() / (len(df_temp) * len(purpose_cols)) * 100.0
+        disadv_df = df_temp[df_temp['is_disadvantaged'] == 1]
+        non_disadv_df = df_temp[df_temp['is_disadvantaged'] == 0]
+        n_disadv, n_non_disadv = len(disadv_df), len(non_disadv_df)
+        n_min_disadv = max(300, int(np.ceil(0.005 * n_disadv))) if n_disadv > 0 else 0
+        n_min_non_disadv = max(300, int(np.ceil(0.005 * n_non_disadv))) if n_non_disadv > 0 else 0
+
+        # Calculate selection differences for each purpose
+        results = []
+        for col in purpose_cols:
+            purpose_name = clean_purpose_label(col, keep_underscore=False)
+            nD_sel = int(disadv_df[col].sum()) if n_disadv > 0 else 0
+            nN_sel = int(non_disadv_df[col].sum()) if n_non_disadv > 0 else 0
+            sel_rate_disadv = (nD_sel / n_disadv * 100.0) if n_disadv > 0 else 0.0
+            sel_rate_non_disadv = (nN_sel / n_non_disadv * 100.0) if n_non_disadv > 0 else 0.0
+            sel_diff_disadv = ((sel_rate_disadv - pooled_sel_baseline) / pooled_sel_baseline * 100.0) if pooled_sel_baseline > 0 else 0.0
+            sel_diff_non_disadv = ((sel_rate_non_disadv - pooled_sel_baseline) / pooled_sel_baseline * 100.0) if pooled_sel_baseline > 0 else 0.0
+            results.append({
+                'purpose_label': purpose_name, 'sel_diff_disadv': sel_diff_disadv, 
+                'sel_diff_non_disadv': sel_diff_non_disadv, 'nD_sel': nD_sel, 'nN_sel': nN_sel
+            })
+
+        out = pd.DataFrame(results)
+        # Filter and rank by effect size
+        if n_disadv > 0 and n_non_disadv > 0:
+            out = out[(out['nD_sel'] >= n_min_disadv) & (out['nN_sel'] >= n_min_non_disadv)]
+        if out.empty:
+            out = pd.DataFrame(results)
+        out['effect_score'] = out[['sel_diff_disadv', 'sel_diff_non_disadv']].abs().max(axis=1)
+        out = out.sort_values('effect_score', ascending=False).head(10)
+
+        # Create plot
+        x = np.arange(len(out))
+        fig, ax = plt.subplots(figsize=(14, 8))
+        ax.bar(x - 0.15, out['sel_diff_disadv'], 0.3, color='#45B7D1', label='Disadvantaged Businesses')
+        ax.bar(x + 0.15, out['sel_diff_non_disadv'], 0.3, color='#E8503A', label='Non-Disadvantaged Businesses')
+        ax.axhline(y=0, color='black', linestyle='-')
+        ax.set_ylabel('Percent Difference from Overall Average (%)')
+        ax.set_xticks(x)
+        ax.set_xticklabels([textwrap.fill(lbl, width=15) for lbl in out['purpose_label']])
+        ax.legend(loc='upper left', title='Business Type')
+        ax.set_title('Grant Purpose Usage Patterns by Business Status\nSelection Rate Differences from Overall Average')
         plt.tight_layout()
-        plot_file = PROCESSED_DATA_DIR / "02_grant_distribution_comparison.png"
+
+        plot_file = PROCESSED_DATA_DIR / "01_purpose_profile.png"
         plt.savefig(plot_file, dpi=300, bbox_inches='tight')
         plots_created.append(plot_file.name)
-        plt.show()
-        plt.close()
-    
-    # 3. Business Demographics Pie Chart
-    if 'is_disadvantaged' in df.columns:
-        plt.figure(figsize=(8, 8))
-        demo_counts = df['is_disadvantaged'].value_counts().reindex([0, 1], fill_value=0)
-        colors = ['#ff9999', '#66b3ff']
-        wedges, texts, autotexts = plt.pie(demo_counts.values, labels=['Non-Disadvantaged', 'Disadvantaged'], 
-                                          autopct='%1.1f%%', colors=colors, startangle=90, 
-                                          textprops={'fontsize': 12})
-        plt.title('Business Demographics Distribution', fontsize=14, fontweight='bold')
-        plot_file = PROCESSED_DATA_DIR / "03_demographics_pie.png"
-        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-        plots_created.append(plot_file.name)
-        plt.show()
-        plt.close()
-    
-    # 4. Top States by Grant Count
-    if 'BusinessState' in df.columns:
-        plt.figure(figsize=(12, 8))
-        states = df['BusinessState'].value_counts().head(10)
-        bars = plt.barh(range(len(states)), states.values, color='lightgreen', edgecolor='darkgreen')
-        plt.title('Top 10 States by Number of Grants', fontsize=14, fontweight='bold')
-        plt.yticks(range(len(states)), states.index)
-        plt.xlabel('Number of Grants', fontsize=12)
-        plt.ylabel('State', fontsize=12)
-        plt.grid(True, alpha=0.3, axis='x')
-        # Add value labels on bars
-        for i, bar in enumerate(bars):
-            plt.text(bar.get_width() + 50, bar.get_y() + bar.get_height()/2, 
-                    f'{int(bar.get_width()):,}', ha='left', va='center')
-        plot_file = PROCESSED_DATA_DIR / "04_top_states.png"
-        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-        plots_created.append(plot_file.name)
-        plt.show()
-        plt.close()
-    
-    # 5. Grant Purposes Frequency
-    purpose_cols = [col for col in df.columns if col.endswith('_binary') and ('purpose' in col or 'purp' in col)]
-    if purpose_cols:
-        plt.figure(figsize=(12, 8))
-        purposes = df[purpose_cols].sum().sort_values(ascending=True)  # ascending for better layout
-        purpose_names = [_clean_purpose_name(col, keep_underscore=True) for col in purposes.index]
-        
-        # Calculate percentages for better comparison
-        total_businesses = len(df)
-        percentages = (purposes / total_businesses) * 100
-        
-        # Create color gradient based on percentage
-        colors = plt.cm.RdYlBu_r(np.linspace(0.2, 0.8, len(purposes)))
-        bars = plt.barh(range(len(purposes)), percentages.values, color=colors, edgecolor='black', alpha=0.8)
-        
-        plt.title('Grant Purpose Selection Rate by Businesses', fontsize=14, fontweight='bold')
-        plt.yticks(range(len(purposes)), purpose_names)
-        plt.xlabel('Percentage of Businesses Selecting Purpose (%)', fontsize=12)
-        plt.ylabel('Grant Purpose', fontsize=12)
-        plt.grid(True, alpha=0.3, axis='x')
-        
-        # Add percentage labels
-        for i, bar in enumerate(bars):
-            plt.text(bar.get_width() + 1, bar.get_y() + bar.get_height()/2, 
-                    f'{bar.get_width():.1f}%', ha='left', va='center', fontweight='bold')
-        
-        plt.xlim(0, 100)  # Set clear 0-100% range
-        plot_file = PROCESSED_DATA_DIR / "05_grant_purposes.png"
-        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-        plots_created.append(plot_file.name)
-        plt.show()
-        plt.close()
-    
-    # 6. Rural vs Urban Comparison
-    if {'is_rural', 'GrantAmount'}.issubset(df.columns):
-        plt.figure(figsize=(8, 6))
-        rural_data = df.copy()
-        rural_data['GrantAmount_num'] = pd.to_numeric(rural_data['GrantAmount'], errors='coerce')
-        rural_data['Location'] = rural_data['is_rural'].map({0: 'Urban', 1: 'Rural'})
-        location_stats = rural_data.groupby('Location')['GrantAmount_num'].mean()
-        bars = plt.bar(location_stats.index, location_stats.values, 
-                      color=['skyblue', 'lightcoral'], edgecolor=['darkblue', 'darkred'], width=0.6)
-        plt.title('Average Grant Amount by Location Type', fontsize=14, fontweight='bold')
-        plt.ylabel('Average Grant Amount ($)', fontsize=12)
-        plt.xlabel('Location Type', fontsize=12)
-        plt.grid(True, alpha=0.3, axis='y')
-        # Add value labels
-        for bar in bars:
-            height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2., height + 5000,
-                    f'${height:,.0f}', ha='center', va='bottom', fontweight='bold')
-        plot_file = PROCESSED_DATA_DIR / "06_rural_vs_urban.png"
-        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-        plots_created.append(plot_file.name)
-        plt.show()
+        maybe_show()
         plt.close()
     
     
-    # 7. State-Level Equity Analysis
-    if {'BusinessState', 'GrantAmount', 'is_disadvantaged'}.issubset(df.columns):
-        plt.figure(figsize=(14, 8))
-        
-        # Calculate equity ratios by state (top 15 states)
-        top_states = df['BusinessState'].value_counts().head(15).index
-        state_equity = []
-        
-        for state in top_states:
-            state_data = df[df['BusinessState'] == state]
-            disadv_mean = pd.to_numeric(state_data[state_data['is_disadvantaged'] == 1]['GrantAmount'], errors='coerce').mean()
-            non_disadv_mean = pd.to_numeric(state_data[state_data['is_disadvantaged'] == 0]['GrantAmount'], errors='coerce').mean()
-            
-            if pd.notna(disadv_mean) and pd.notna(non_disadv_mean) and non_disadv_mean > 0:
-                state_equity.append((state, disadv_mean / non_disadv_mean, len(state_data)))
-        
-        # Sort by equity ratio
-        state_equity.sort(key=lambda x: x[1])
-        states, ratios, counts = zip(*state_equity)
-        
-        # Color code: red for ratios < 1.0, green for >= 1.0
-        colors = ['lightcoral' if r < 1.0 else 'lightgreen' for r in ratios]
-        
-        bars = plt.barh(range(len(states)), ratios, color=colors, edgecolor='black', alpha=0.8)
-        plt.title('State-Level Funding Equity Analysis\n(Disadvantaged ÷ Non-Disadvantaged Grant Ratio)', fontsize=14, fontweight='bold')
-        plt.yticks(range(len(states)), states)
-        plt.xlabel('Equity Ratio (1.0 = Equal Funding)', fontsize=12)
-        plt.ylabel('State', fontsize=12)
-        plt.grid(True, alpha=0.3, axis='x')
-        plt.axvline(x=1.0, color='black', linestyle='--', alpha=0.7, label='Perfect Equity (1.0)')
-        
-        # Add ratio labels
-        for i, bar in enumerate(bars):
-            plt.text(bar.get_width() + 0.01, bar.get_y() + bar.get_height()/2, 
-                    f'{bar.get_width():.2f}', ha='left', va='center', fontweight='bold')
-        
-        plt.legend()
-        plt.xlim(0, max(ratios) * 1.1)
-        plot_file = PROCESSED_DATA_DIR / "07_state_equity_analysis.png"
-        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-        plots_created.append(plot_file.name)
-        plt.show()
-        plt.close()
     
-    # 8. Purpose Co-occurrence Heatmap
-    purpose_cols = [col for col in df.columns if col.endswith('_binary') and ('purpose' in col or 'purp' in col)]
+    # 5. Purpose Co-occurrence Heatmap
+    purpose_cols = list_purpose_binary_cols(df)
     if len(purpose_cols) >= 5:  # Only create if we have enough purposes
         plt.figure(figsize=(10, 8))
         
@@ -523,7 +351,7 @@ def create_individual_plots(df):
         corr_matrix = purpose_data.corr()
         
         # Clean up labels
-        clean_labels = [_clean_purpose_name(col) for col in purpose_cols]
+        clean_labels = [clean_purpose_label(col) for col in purpose_cols]
         
         # Create heatmap - mask only upper triangle, keep diagonal
         mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=1)  # k=1 keeps diagonal visible
@@ -536,152 +364,36 @@ def create_individual_plots(df):
         plt.xticks(rotation=45, ha='right')
         plt.yticks(rotation=0)
         
-        plot_file = PROCESSED_DATA_DIR / "08_purpose_cooccurrence.png"
+        plot_file = PROCESSED_DATA_DIR / "02_purpose_cooccurrence.png"
         plt.savefig(plot_file, dpi=300, bbox_inches='tight')
         plots_created.append(plot_file.name)
-        plt.show()
+        maybe_show()
         plt.close()
-    
-    # 9. Purpose Patterns by Demographics
-    purpose_cols = [col for col in df.columns if col.endswith('_binary') and ('purpose' in col or 'purp' in col)]
-    if purpose_cols and 'is_disadvantaged' in df.columns:
-        plt.figure(figsize=(14, 8))
-        
-        # Calculate purpose rates by demographic status
-        disadv_purposes = df[df['is_disadvantaged'] == 1][purpose_cols].mean() * 100
-        non_disadv_purposes = df[df['is_disadvantaged'] == 0][purpose_cols].mean() * 100
-        
-        # Clean labels
-        clean_labels = [_clean_purpose_name(col) for col in purpose_cols]
-        
-        x = np.arange(len(clean_labels))
-        width = 0.35
-        
-        bars1 = plt.bar(x - width/2, disadv_purposes.values, width, 
-                       label='Disadvantaged', color='lightblue', edgecolor='darkblue', alpha=0.8)
-        bars2 = plt.bar(x + width/2, non_disadv_purposes.values, width,
-                       label='Non-Disadvantaged', color='lightcoral', edgecolor='darkred', alpha=0.8)
-        
-        plt.title('Grant Purpose Selection by Business Status', fontsize=14, fontweight='bold')
-        plt.xlabel('Grant Purpose', fontsize=12)
-        plt.ylabel('Selection Rate (%)', fontsize=12)
-        plt.xticks(x, clean_labels, rotation=45, ha='right')
-        plt.legend()
-        plt.grid(True, alpha=0.3, axis='y')
-        
-        # Add value labels on bars
-        for bars in [bars1, bars2]:
-            for bar in bars:
-                height = bar.get_height()
-                plt.text(bar.get_x() + bar.get_width()/2., height + 0.5,
-                        f'{height:.0f}%', ha='center', va='bottom', fontsize=9)
-        
-        plt.ylim(0, 100)
-        plt.tight_layout()
-        
-        plot_file = PROCESSED_DATA_DIR / "09_purpose_by_demographics.png"
-        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-        plots_created.append(plot_file.name)
-        plt.show()
-        plt.close()
-    
-    # 10. Average Grant by Primary Purpose
-    purpose_cols = [col for col in df.columns if col.endswith('_binary') and ('purpose' in col or 'purp' in col)]
-    if purpose_cols and 'GrantAmount' in df.columns:
-        plt.figure(figsize=(12, 8))
-        
-        # Find primary purpose (most common single purpose) for each business
-        df_temp = df.copy()
-        df_temp['purpose_count'] = df_temp[purpose_cols].sum(axis=1)
-        df_temp['GrantAmount_num'] = pd.to_numeric(df_temp['GrantAmount'], errors='coerce')
-        
-        # Calculate average grant by purpose
-        purpose_grants = {}
-        for col in purpose_cols:
-            businesses_with_purpose = df_temp[df_temp[col] == 1]
-            avg_grant = businesses_with_purpose['GrantAmount_num'].mean()
-            count = len(businesses_with_purpose)
-            purpose_grants[col] = (avg_grant / 1000, count)  # Convert to thousands
-        
-        # Sort by average grant amount
-        sorted_purposes = sorted(purpose_grants.items(), key=lambda x: x[1][0], reverse=True)
-        
-        purposes, amounts_counts = zip(*sorted_purposes)
-        amounts, counts = zip(*amounts_counts)
-        
-        clean_labels = [_clean_purpose_name(col) for col in purposes]
-        
-        # Create color gradient based on amount
-        colors = plt.cm.viridis(np.linspace(0.2, 0.8, len(amounts)))
-        bars = plt.bar(range(len(amounts)), amounts, color=colors, edgecolor='black', alpha=0.8)
-        
-        plt.title('Average Grant Amount by Purpose Category', fontsize=14, fontweight='bold')
-        plt.xlabel('Grant Purpose', fontsize=12)
-        plt.ylabel('Average Grant Amount ($K)', fontsize=12)
-        plt.xticks(range(len(clean_labels)), clean_labels, rotation=45, ha='right')
-        plt.grid(True, alpha=0.3, axis='y')
-        
-        # Add value labels
-        for i, bar in enumerate(bars):
-            plt.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 5,
-                    f'${bar.get_height():.0f}K', ha='center', va='bottom', fontweight='bold')
-        
-        plt.tight_layout()
-        
-        plot_file = PROCESSED_DATA_DIR / "10_grant_by_purpose.png"
-        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-        plots_created.append(plot_file.name)
-        plt.show()
-        plt.close()
-    
-    print(f"Created {len(plots_created)} individual plots:")
-    for plot in plots_created:
-        print(f"  - {plot}")
     
     return plots_created
 
 def run_comprehensive_analysis():
     """Run complete comprehensive analysis"""
-    print("=== RRF COMPREHENSIVE ANALYSIS ===")
+    logger.info("Loading data...")
     df = load_data()
     
-    # Run all analyses
-    for analyze_func in [analyze_data_quality, analyze_descriptive_stats, 
-                         analyze_demographics, analyze_equity, 
-                         analyze_geographic_patterns, analyze_grant_purposes]:
-        analyze_func(df)
+    logger.info("Running analysis...")
+    # Persist comprehensive results
+    try:
+        compute_and_save_summary_metrics(df)
+        logger.info("Analysis complete")
+    except Exception as e:
+        logger.error(f"Analysis failed: {e}")
     
+    logger.info("Creating visualizations...")
     # Visualizations with fallback
     try:
         create_individual_plots(df)
+        logger.info("Visualizations complete")
     except Exception as e:
-        print(f"Individual plotting failed: {e}")
-        try:
-            create_basic_plots(df)
-        except Exception as e2:
-            print(f"Basic plotting also failed: {e2}")
+        logger.warning(f"Visualization failed: {e}")
     
-    print("\n=== COMPREHENSIVE ANALYSIS COMPLETE ===")
     return df
-
-def create_basic_plots(df):
-    """Fallback basic plots"""
-    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-    
-    if 'GrantAmount' in df.columns:
-        grant_data = pd.to_numeric(df['GrantAmount'], errors='coerce').dropna()
-        axes[0,0].hist(grant_data / 1000, bins=30, alpha=0.7)
-        axes[0,0].set_title('Grant Distribution ($K)')
-    
-    if 'is_disadvantaged' in df.columns:
-        demo_counts = df['is_disadvantaged'].value_counts().reindex([0, 1], fill_value=0)
-        axes[0,1].pie(demo_counts.values, labels=['Non-Disadvantaged', 'Disadvantaged'], autopct='%1.1f%%')
-        axes[0,1].set_title('Business Demographics')
-    
-    plt.tight_layout()
-    plot_file = PROCESSED_DATA_DIR / "basic_plots.png"
-    plt.savefig(plot_file, dpi=300, bbox_inches='tight')
-    print(f"Saved basic plots: {plot_file}")
 
 def create_plots_only():
     """Create just the individual plots without running full analysis"""
