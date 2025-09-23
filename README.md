@@ -42,9 +42,9 @@ python equity_analysis.py   # Deeper statistical equity (CIs, robustness)
 - Database:
   - table rrf_data (local Postgres)
 - Files in "data/processed/..."
-  - timestamped and cleaned CSV,
-  - analysis and equity analysis JSONs,
-  - PNG plots)
+  - timestamped and cleaned CSV
+  - analysis and equity analysis JSONs
+  - PNG plots
 
 ---
 
