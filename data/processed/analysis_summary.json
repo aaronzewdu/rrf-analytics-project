@@ -1,0 +1,286 @@
+{
+  "records": 100828,
+  "demographics": {
+    "total_businesses": 100828,
+    "disadvantaged_count": 86458,
+    "disadvantaged_pct": 85.7,
+    "demographics": {
+      "Socioeconomic": {
+        "count": 34659,
+        "pct": 34.4
+      },
+      "Women-Owned": {
+        "count": 43978,
+        "pct": 43.6
+      },
+      "Veteran": {
+        "count": 5741,
+        "pct": 5.7
+      },
+      "Low-Income": {
+        "count": 27242,
+        "pct": 27.0
+      },
+      "HubZone": {
+        "count": 33894,
+        "pct": 33.6
+      },
+      "Rural": {
+        "count": 15541,
+        "pct": 15.4
+      }
+    }
+  },
+  "equity": {
+    "disadvantaged": {
+      "count": 86458,
+      "mean_grant": 262756,
+      "median_grant": 119347
+    },
+    "non_disadvantaged": {
+      "count": 14370,
+      "mean_grant": 410274,
+      "median_grant": 173836
+    },
+    "equity_ratio": 0.64
+  },
+  "grant_statistics": {
+    "mean": 283780,
+    "median": 125996,
+    "min": 1000,
+    "max": 10000000
+  },
+  "grant_equity_details": {
+    "equity_ratio_median": 0.687,
+    "interpretation": "Disadvantaged businesses receive 69% of non-disadvantaged median funding levels"
+  },
+  "state_distribution": {
+    "total_states": 56,
+    "states": [
+      {
+        "state": "CA",
+        "grant_count": 15983
+      },
+      {
+        "state": "NY",
+        "grant_count": 9779
+      },
+      {
+        "state": "TX",
+        "grant_count": 6385
+      },
+      {
+        "state": "FL",
+        "grant_count": 5719
+      },
+      {
+        "state": "IL",
+        "grant_count": 4540
+      },
+      {
+        "state": "PA",
+        "grant_count": 3514
+      },
+      {
+        "state": "MI",
+        "grant_count": 3294
+      },
+      {
+        "state": "WA",
+        "grant_count": 3238
+      },
+      {
+        "state": "NJ",
+        "grant_count": 3087
+      },
+      {
+        "state": "OH",
+        "grant_count": 2834
+      },
+      {
+        "state": "VA",
+        "grant_count": 2724
+      },
+      {
+        "state": "GA",
+        "grant_count": 2659
+      },
+      {
+        "state": "NC",
+        "grant_count": 2578
+      },
+      {
+        "state": "MA",
+        "grant_count": 2555
+      },
+      {
+        "state": "OR",
+        "grant_count": 2339
+      },
+      {
+        "state": "WI",
+        "grant_count": 2095
+      },
+      {
+        "state": "MD",
+        "grant_count": 2020
+      },
+      {
+        "state": "CO",
+        "grant_count": 1767
+      },
+      {
+        "state": "MN",
+        "grant_count": 1719
+      },
+      {
+        "state": "LA",
+        "grant_count": 1393
+      },
+      {
+        "state": "AZ",
+        "grant_count": 1327
+      },
+      {
+        "state": "CT",
+        "grant_count": 1302
+      },
+      {
+        "state": "MO",
+        "grant_count": 1190
+      },
+      {
+        "state": "IN",
+        "grant_count": 1189
+      },
+      {
+        "state": "TN",
+        "grant_count": 1164
+      },
+      {
+        "state": "HI",
+        "grant_count": 1147
+      },
+      {
+        "state": "SC",
+        "grant_count": 1044
+      },
+      {
+        "state": "AL",
+        "grant_count": 874
+      },
+      {
+        "state": "IA",
+        "grant_count": 847
+      },
+      {
+        "state": "KY",
+        "grant_count": 810
+      },
+      {
+        "state": "NV",
+        "grant_count": 763
+      },
+      {
+        "state": "DC",
+        "grant_count": 730
+      },
+      {
+        "state": "OK",
+        "grant_count": 684
+      },
+      {
+        "state": "ME",
+        "grant_count": 629
+      },
+      {
+        "state": "KS",
+        "grant_count": 602
+      },
+      {
+        "state": "NM",
+        "grant_count": 602
+      },
+      {
+        "state": "AR",
+        "grant_count": 508
+      },
+      {
+        "state": "MS",
+        "grant_count": 505
+      },
+      {
+        "state": "NE",
+        "grant_count": 470
+      },
+      {
+        "state": "UT",
+        "grant_count": 468
+      },
+      {
+        "state": "RI",
+        "grant_count": 443
+      },
+      {
+        "state": "NH",
+        "grant_count": 417
+      },
+      {
+        "state": "AK",
+        "grant_count": 384
+      },
+      {
+        "state": "VT",
+        "grant_count": 369
+      },
+      {
+        "state": "PR",
+        "grant_count": 342
+      },
+      {
+        "state": "MT",
+        "grant_count": 328
+      },
+      {
+        "state": "ID",
+        "grant_count": 304
+      },
+      {
+        "state": "DE",
+        "grant_count": 286
+      },
+      {
+        "state": "WV",
+        "grant_count": 272
+      },
+      {
+        "state": "SD",
+        "grant_count": 193
+      },
+      {
+        "state": "ND",
+        "grant_count": 170
+      },
+      {
+        "state": "WY",
+        "grant_count": 123
+      },
+      {
+        "state": "GU",
+        "grant_count": 79
+      },
+      {
+        "state": "VI",
+        "grant_count": 28
+      },
+      {
+        "state": "MP",
+        "grant_count": 12
+      },
+      {
+        "state": "AS",
+        "grant_count": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,420 @@
+{
+  "business_types": {
+    "bakery": {
+      "n": 1639,
+      "group": "fixed_food",
+      "purposes": {
+        "Payroll": {
+          "z_score": -8.42294195196014,
+          "p_value": 0.0,
+          "segment_rate": 0.9170225747406956,
+          "baseline_rate": 0.9592035493994157,
+          "difference": -0.04218097465872006,
+          "ci_lower": 0.9072071550449856,
+          "ci_upper": 0.9268379944364056,
+          "odds_ratio": 0.47003659880017,
+          "segment_n": 1639,
+          "baseline_n": 64687,
+          "p_adjusted": 0.0,
+          "significant_fdr": true
+        },
+        "Debt": {
+          "z_score": -8.718880794401347,
+          "p_value": 0.0,
+          "segment_rate": 0.3288590604026846,
+          "baseline_rate": 0.43695023729652016,
+          "difference": -0.10809117689383557,
+          "ci_lower": 0.30456021841737396,
+          "ci_upper": 0.3531579023879952,
+          "odds_ratio": 0.6314091632761367,
+          "segment_n": 1639,
+          "baseline_n": 64687,
+          "p_adjusted": 0.0,
+          "significant_fdr": true
+        },
+        "Food": {
+          "z_score": -9.588784366909135,
+          "p_value": 0.0,
+          "segment_rate": 0.7779133618059793,
+          "baseline_rate": 0.8613168024487146,
+          "difference": -0.0834034406427353,
+          "ci_lower": 0.7608652421064792,
+          "ci_upper": 0.7949614815054793,
+          "odds_ratio": 0.563987824043284,
+          "segment_n": 1639,
+          "baseline_n": 64687,
+          "p_adjusted": 0.0,
+          "significant_fdr": true
+        },
+        "Utility": {
+          "z_score": -5.413746669059501,
+          "p_value": 6.171947042332704e-08,
+          "segment_rate": 0.9158023184868822,
+          "baseline_rate": 0.9464807457448946,
+          "difference": -0.030678427258012397,
+          "ci_lower": 0.9046954601314006,
+          "ci_upper": 0.9269091768423638,
+          "odds_ratio": 0.6150350631136048,
+          "segment_n": 1639,
+          "baseline_n": 64687,
+          "p_adjusted": 1.0099549705635334e-07,
+          "significant_fdr": true
+        },
+        "Covered Supplier": {
+          "z_score": -11.160156058709532,
+          "p_value": 0.0,
+          "segment_rate": 0.48932275777913364,
+          "baseline_rate": 0.6247159398333514,
+          "difference": -0.13539318205421774,
+          "ci_lower": 0.46554435939202793,
+          "ci_upper": 0.5131011561662393,
+          "odds_ratio": 0.5756074967699718,
+          "segment_n": 1639,
+          "baseline_n": 64687,
+          "p_adjusted": 0.0,
+          "significant_fdr": true
+        },
+        "Maintenance Indoor": {
+          "z_score": -11.716859190349279,
+          "p_value": 0.0,
+          "segment_rate": 0.6741915802318487,
+          "baseline_rate": 0.7934515435868104,
+          "difference": -0.1192599633549617,
+          "ci_lower": 0.6542417349381324,
+          "ci_upper": 0.6941414255255649,
+          "odds_ratio": 0.5386697224074471,
+          "segment_n": 1639,
+          "baseline_n": 64687,
+          "p_adjusted": 0.0,
+          "significant_fdr": true
+        }
+      }
+    },
+    "brewpub": {
+      "n": 1309,
+      "group": "fixed_beverage",
+      "purposes": {
+        "Debt": {
+          "z_score": 5.2695072158732295,
+          "p_value": 1.3679049359893725e-07,
+          "segment_rate": 0.49732620320855614,
+          "baseline_rate": 0.4225092250922509,
+          "difference": 0.07481697811630522,
+          "ci_lower": 0.4694979317781207,
+          "ci_upper": 0.5251544746389916,
+          "odds_ratio": 1.352271671467063,
+          "segment_n": 1309,
+          "baseline_n": 16802,
+          "p_adjusted": 2.0518574039840587e-07,
+          "significant_fdr": true
+        },
+        "Food": {
+          "z_score": -4.156286122055871,
+          "p_value": 3.234626936432505e-05,
+          "segment_rate": 0.8151260504201681,
+          "baseline_rate": 0.8572193786453993,
+          "difference": -0.042093328225231263,
+          "ci_lower": 0.7952758955225924,
+          "ci_upper": 0.8349762053177437,
+          "odds_ratio": 0.7343893002089213,
+          "segment_n": 1309,
+          "baseline_n": 16802,
+          "p_adjusted": 3.8815523237190067e-05,
+          "significant_fdr": true
+        },
+        "Operations": {
+          "z_score": -4.591705541256377,
+          "p_value": 4.39638367244477e-06,
+          "segment_rate": 0.8678380443086325,
+          "baseline_rate": 0.9066777764551839,
+          "difference": -0.03883973214655134,
+          "ci_lower": 0.8512590467393739,
+          "ci_upper": 0.8844170418778912,
+          "odds_ratio": 0.6758718139604066,
+          "segment_n": 1309,
+          "baseline_n": 16802,
+          "p_adjusted": 5.652493293143276e-06,
+          "significant_fdr": true
+        },
+        "Supplies": {
+          "z_score": -6.297701949264185,
+          "p_value": 3.0209057477748047e-10,
+          "segment_rate": 0.7784568372803667,
+          "baseline_rate": 0.8447208665635043,
+          "difference": -0.06626402928313757,
+          "ci_lower": 0.7578338388531191,
+          "ci_upper": 0.7990798357076144,
+          "odds_ratio": 0.6459160295143068,
+          "segment_n": 1309,
+          "baseline_n": 16802,
+          "p_adjusted": 5.437630345994648e-10,
+          "significant_fdr": true
+        },
+        "Utility": {
+          "z_score": -3.822631152520977,
+          "p_value": 0.00013203521030114018,
+          "segment_rate": 0.920550038197097,
+          "baseline_rate": 0.9457802642542554,
+          "difference": -0.02523022605715841,
+          "ci_lower": 0.9076135970132757,
+          "ci_upper": 0.9334864793809183,
+          "odds_ratio": 0.6642336252256965,
+          "segment_n": 1309,
+          "baseline_n": 16802,
+          "p_adjusted": 0.00013980198737767783,
+          "significant_fdr": true
+        },
+        "Outdoor Seating Construction": {
+          "z_score": 7.4619090629238425,
+          "p_value": 8.526512829121202e-14,
+          "segment_rate": 0.5691367456073338,
+          "baseline_rate": 0.46226639685751697,
+          "difference": 0.10687034874981688,
+          "ci_lower": 0.5410653925818167,
+          "ci_upper": 0.597208098632851,
+          "odds_ratio": 1.5365688350513678,
+          "segment_n": 1309,
+          "baseline_n": 16802,
+          "p_adjusted": 1.7053025658242404e-13,
+          "significant_fdr": true
+        },
+        "Covered Supplier": {
+          "z_score": -5.128459134758781,
+          "p_value": 2.9212329111238944e-07,
+          "segment_rate": 0.5026737967914439,
+          "baseline_rate": 0.5755267230091656,
+          "difference": -0.07285292621772177,
+          "ci_lower": 0.4748307874908636,
+          "ci_upper": 0.5305168060920241,
+          "odds_ratio": 0.7454693042443649,
+          "segment_n": 1309,
+          "baseline_n": 16802,
+          "p_adjusted": 4.044784030786931e-07,
+          "significant_fdr": true
+        },
+        "Maintenance Indoor": {
+          "z_score": -8.374852314362288,
+          "p_value": 0.0,
+          "segment_rate": 0.7165775401069518,
+          "baseline_rate": 0.8118081180811808,
+          "difference": -0.09523057797422896,
+          "ci_lower": 0.6942903491424743,
+          "ci_upper": 0.7388647310714294,
+          "odds_ratio": 0.586106346483705,
+          "segment_n": 1309,
+          "baseline_n": 16802,
+          "p_adjusted": 0.0,
+          "significant_fdr": true
+        }
+      }
+    }
+  },
+  "geographic": {
+    "bar": [
+      {
+        "type": "geographic",
+        "business_type": "bar",
+        "pattern": "Urban bars",
+        "purpose": "Rent",
+        "rural_rate": 0.8217787114845938,
+        "urban_rate": 0.9388304186120123,
+        "difference": -0.11705170712741853,
+        "z_score": -20.506440130566972,
+        "interpretation": "Urban bars are 3.3x as likely to select Rent"
+      }
+    ],
+    "producer": [
+      {
+        "type": "geographic",
+        "business_type": "producer",
+        "pattern": "Urban producers",
+        "purpose": "Rent",
+        "rural_rate": 0.7703488372093024,
+        "urban_rate": 0.9221052631578948,
+        "difference": -0.1517564259485924,
+        "z_score": -7.469073175631375,
+        "interpretation": "Urban producers are 3.5x as likely to select Rent"
+      }
+    ],
+    "bakery": [
+      {
+        "type": "geographic",
+        "business_type": "bakery",
+        "pattern": "Urban bakeries",
+        "purpose": "Covered Supplier",
+        "rural_rate": 0.39351851851851855,
+        "urban_rate": 0.5038650737877723,
+        "difference": -0.1103465552692538,
+        "z_score": -3.0229270683078218,
+        "interpretation": "Urban bakeries are 1.6x as likely to select Covered Supplier"
+      }
+    ]
+  },
+  "disadvantaged": {
+    "bakery": [
+      {
+        "type": "equity",
+        "business_type": "bakery",
+        "pattern": "Disadvantaged bakeries",
+        "purpose": "Supplies",
+        "disadvantaged_rate": 0.8297587131367292,
+        "non_disadvantaged_rate": 0.7006802721088435,
+        "difference": 0.12907844102788568,
+        "z_score": 3.8713616736540954,
+        "interpretation": "Despite constraints, disadvantaged bakeries invest in Supplies 13% more"
+      }
+    ]
+  },
+  "key_insights": [
+    {
+      "type": "geographic",
+      "business_type": "bar",
+      "pattern": "Urban bars",
+      "purpose": "Rent",
+      "rural_rate": 0.8217787114845938,
+      "urban_rate": 0.9388304186120123,
+      "difference": -0.11705170712741853,
+      "z_score": -20.506440130566972,
+      "interpretation": "Urban bars are 3.3x as likely to select Rent"
+    },
+    {
+      "business_type": "bakery",
+      "purpose": "Maintenance Indoor",
+      "z_score": -11.716859190349279,
+      "odds_ratio": 0.5386697224074471,
+      "interpretation": "bakeries are 0.5x less likely to select Maintenance Indoor compared to similar businesses",
+      "segment_rate": 0.6741915802318487,
+      "baseline_rate": 0.7934515435868104
+    },
+    {
+      "business_type": "bakery",
+      "purpose": "Covered Supplier",
+      "z_score": -11.160156058709532,
+      "odds_ratio": 0.5756074967699718,
+      "interpretation": "bakeries are 0.6x less likely to select Covered Supplier compared to similar businesses",
+      "segment_rate": 0.48932275777913364,
+      "baseline_rate": 0.6247159398333514
+    },
+    {
+      "business_type": "bakery",
+      "purpose": "Food",
+      "z_score": -9.588784366909135,
+      "odds_ratio": 0.563987824043284,
+      "interpretation": "bakeries are 0.6x less likely to select Food compared to similar businesses",
+      "segment_rate": 0.7779133618059793,
+      "baseline_rate": 0.8613168024487146
+    },
+    {
+      "business_type": "bakery",
+      "purpose": "Debt",
+      "z_score": -8.718880794401347,
+      "odds_ratio": 0.6314091632761367,
+      "interpretation": "bakeries are 0.6x less likely to select Debt compared to similar businesses",
+      "segment_rate": 0.3288590604026846,
+      "baseline_rate": 0.43695023729652016
+    },
+    {
+      "business_type": "bakery",
+      "purpose": "Payroll",
+      "z_score": -8.42294195196014,
+      "odds_ratio": 0.47003659880017,
+      "interpretation": "bakeries are 0.5x less likely to select Payroll compared to similar businesses",
+      "segment_rate": 0.9170225747406956,
+      "baseline_rate": 0.9592035493994157
+    },
+    {
+      "business_type": "brewpub",
+      "purpose": "Maintenance Indoor",
+      "z_score": -8.374852314362288,
+      "odds_ratio": 0.586106346483705,
+      "interpretation": "brewpubs are 0.6x less likely to select Maintenance Indoor compared to similar businesses",
+      "segment_rate": 0.7165775401069518,
+      "baseline_rate": 0.8118081180811808
+    },
+    {
+      "type": "geographic",
+      "business_type": "producer",
+      "pattern": "Urban producers",
+      "purpose": "Rent",
+      "rural_rate": 0.7703488372093024,
+      "urban_rate": 0.9221052631578948,
+      "difference": -0.1517564259485924,
+      "z_score": -7.469073175631375,
+      "interpretation": "Urban producers are 3.5x as likely to select Rent"
+    },
+    {
+      "business_type": "brewpub",
+      "purpose": "Outdoor Seating Construction",
+      "z_score": 7.4619090629238425,
+      "odds_ratio": 1.5365688350513678,
+      "interpretation": "brewpubs are 1.5x more likely to select Outdoor Seating Construction compared to similar businesses",
+      "segment_rate": 0.5691367456073338,
+      "baseline_rate": 0.46226639685751697
+    },
+    {
+      "business_type": "brewpub",
+      "purpose": "Supplies",
+      "z_score": -6.297701949264185,
+      "odds_ratio": 0.6459160295143068,
+      "interpretation": "brewpubs are 0.6x less likely to select Supplies compared to similar businesses",
+      "segment_rate": 0.7784568372803667,
+      "baseline_rate": 0.8447208665635043
+    },
+    {
+      "business_type": "bakery",
+      "purpose": "Utility",
+      "z_score": -5.413746669059501,
+      "odds_ratio": 0.6150350631136048,
+      "interpretation": "bakeries are 0.6x less likely to select Utility compared to similar businesses",
+      "segment_rate": 0.9158023184868822,
+      "baseline_rate": 0.9464807457448946
+    },
+    {
+      "business_type": "brewpub",
+      "purpose": "Debt",
+      "z_score": 5.2695072158732295,
+      "odds_ratio": 1.352271671467063,
+      "interpretation": "brewpubs are 1.4x more likely to select Debt compared to similar businesses",
+      "segment_rate": 0.49732620320855614,
+      "baseline_rate": 0.4225092250922509
+    },
+    {
+      "business_type": "brewpub",
+      "purpose": "Covered Supplier",
+      "z_score": -5.128459134758781,
+      "odds_ratio": 0.7454693042443649,
+      "interpretation": "brewpubs are 0.7x less likely to select Covered Supplier compared to similar businesses",
+      "segment_rate": 0.5026737967914439,
+      "baseline_rate": 0.5755267230091656
+    },
+    {
+      "business_type": "brewpub",
+      "purpose": "Operations",
+      "z_score": -4.591705541256377,
+      "odds_ratio": 0.6758718139604066,
+      "interpretation": "brewpubs are 0.7x less likely to select Operations compared to similar businesses",
+      "segment_rate": 0.8678380443086325,
+      "baseline_rate": 0.9066777764551839
+    },
+    {
+      "business_type": "brewpub",
+      "purpose": "Food",
+      "z_score": -4.156286122055871,
+      "odds_ratio": 0.7343893002089213,
+      "interpretation": "brewpubs are 0.7x less likely to select Food compared to similar businesses",
+      "segment_rate": 0.8151260504201681,
+      "baseline_rate": 0.8572193786453993
+    }
+  ],
+  "diagnostics": {
+    "tests_performed": 80,
+    "filtered_by_expectations": 5,
+    "filtered_by_significance": 61
+  },
+  "test_statistics": {
+    "total_tests_performed": 18,
+    "significant_before_correction": 18,
+    "significant_after_fdr": 18,
+    "correction_method": "Benjamini-Hochberg FDR"
+  }
+}

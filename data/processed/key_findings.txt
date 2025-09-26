@@ -1,0 +1,40 @@
+KEY NON-OBVIOUS FINDINGS FROM RRF PURPOSE ANALYSIS
+============================================================
+
+TOP INSIGHTS (Surprising Patterns Only):
+----------------------------------------
+
+1. Urban bars are 3.3x as likely to select Rent
+
+2. bakeries are 0.5x less likely to select Maintenance Indoor compared to similar businesses
+   - Rate: 67.4% vs baseline 79.3%
+
+3. bakeries are 0.6x less likely to select Covered Supplier compared to similar businesses
+   - Rate: 48.9% vs baseline 62.5%
+
+4. bakeries are 0.6x less likely to select Food compared to similar businesses
+   - Rate: 77.8% vs baseline 86.1%
+
+5. bakeries are 0.6x less likely to select Debt compared to similar businesses
+   - Rate: 32.9% vs baseline 43.7%
+
+6. bakeries are 0.5x less likely to select Payroll compared to similar businesses
+   - Rate: 91.7% vs baseline 95.9%
+
+7. brewpubs are 0.6x less likely to select Maintenance Indoor compared to similar businesses
+   - Rate: 71.7% vs baseline 81.2%
+
+8. Urban producers are 3.5x as likely to select Rent
+
+9. brewpubs are 1.5x more likely to select Outdoor Seating Construction compared to similar businesses
+   - Rate: 56.9% vs baseline 46.2%
+
+10. brewpubs are 0.6x less likely to select Supplies compared to similar businesses
+   - Rate: 77.8% vs baseline 84.5%
+
+
+METHODOLOGY NOTE:
+----------------------------------------
+All findings shown are statistically significant (p < 0.01) and
+represent departures from structural expectations. Obvious patterns
+(e.g., food trucks not paying rent) have been filtered out.
