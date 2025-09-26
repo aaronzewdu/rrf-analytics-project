@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""
-Analysis for RRF Analytics Project
-"""
+# analysis for rrf analytics project
+
 import os
 import pandas as pd
 import matplotlib
-# Use non-interactive backend unless SHOW_PLOTS=1
+# use non-interactive backend unless SHOW_PLOTS=1
 if os.environ.get("SHOW_PLOTS", "0") != "1":
     matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -20,10 +19,10 @@ from config import PROCESSED_DATA_DIR, DB_CONFIG, DEMOGRAPHIC_FIELDS, RURAL_FIEL
 from utils import setup_logger
 from purpose_helpers import list_purpose_binary_cols, clean_purpose_label
 
-# Show plots only if explicitly requested via env var
+# show plots only if explicitly requested via env var
 # export SHOW_PLOTS=1 to enable interactive windows
 
-# Setup logger
+# setup logger
 logger = setup_logger(__name__)
 
 def maybe_show():
@@ -32,7 +31,7 @@ def maybe_show():
 
 
 def load_data():
-    """Load processed data"""
+    # load processed data
     db_error = None
     try:
         engine = create_engine(DB_CONFIG)
@@ -41,10 +40,10 @@ def load_data():
     except SQLAlchemyError as e:
         db_error = e
     except Exception as e:
-        # Capture any other runtime errors during DB load (e.g., driver issues)
+        # capture any other runtime errors during db load (e.g., driver issues)
         db_error = e
 
-    # Fallback to latest processed CSV if DB load failed
+    # fallback to latest processed csv if db load failed
     processed_files = list(PROCESSED_DATA_DIR.glob("rrf_processed_*.csv"))
     if not processed_files:
         raise FileNotFoundError(
@@ -55,7 +54,7 @@ def load_data():
     return df
 
 def analyze_demographics(df):
-    """Analyze demographics"""
+    # analyze demographics
     if 'is_disadvantaged' not in df.columns:
         return {}
     
@@ -68,7 +67,7 @@ def analyze_demographics(df):
         "disadvantaged_pct": round(disadvantaged/total * 100, 1)
     }
     
-    # Demographic categories
+    # demographic categories
     demographics = {}
     for col, label in {**DEMOGRAPHIC_FIELDS, **RURAL_FIELD_MAPPING}.items():
         if col in df.columns:
@@ -81,7 +80,7 @@ def analyze_demographics(df):
     return results
 
 def analyze_descriptive_stats(df):
-    """Comprehensive descriptive statistics"""
+    # comprehensive descriptive statistics
     print("\n=== DESCRIPTIVE STATISTICS ===")
     if 'GrantAmount' not in df.columns:
         return
@@ -96,12 +95,12 @@ def analyze_descriptive_stats(df):
         print(f"  {stat}: ${value:,.0f}")
 
 def analyze_data_quality(df):
-    """Data quality assessment"""
+    # data quality assessment
     print(f"\n=== DATA QUALITY ===")
     print(f"Total records: {len(df):,}")
     print(f"Total columns: {len(df.columns)}")
     
-    # Missing data
+    # missing data
     missing = df.isnull().sum()
     if missing.sum() > 0:
         print("\nMissing values:")
@@ -110,7 +109,7 @@ def analyze_data_quality(df):
     else:
         print("\nNo missing values detected")
     
-    # Outlier detection
+    # outlier detection
     if 'GrantAmount' in df.columns:
         grants = pd.to_numeric(df['GrantAmount'], errors='coerce').dropna()
         q1, q3 = grants.quantile([0.25, 0.75])
@@ -119,7 +118,7 @@ def analyze_data_quality(df):
         print(f"\nGrant amount outliers: {len(outliers):,} ({len(outliers)/len(grants):.1%})")
 
 def analyze_equity(df):
-    """Core equity analysis"""
+    # core equity analysis
     if not {'is_disadvantaged', 'GrantAmount'}.issubset(df.columns):
         return {}
     
@@ -143,10 +142,10 @@ def analyze_equity(df):
     return results
 
 def analyze_geographic_patterns(df):
-    """Geographic analysis"""
+    # geographic analysis
     print("\n=== GEOGRAPHIC ANALYSIS ===")
     
-    # State-level analysis
+    # state-level analysis
     if {'BusinessState', 'GrantAmount'}.issubset(df.columns):
         state_stats = df.groupby('BusinessState').agg({
             'GrantAmount': ['count', lambda x: pd.to_numeric(x, errors='coerce').mean()],
@@ -158,7 +157,7 @@ def analyze_geographic_patterns(df):
         for state, row in state_stats.nlargest(10, 'Grant_Count').iterrows():
             print(f"  {state}: {row['Grant_Count']:,} grants, ${row['Avg_Grant']:,.0f} avg, {row['Pct_Disadvantaged']:.1%} disadvantaged")
     
-    # Rural vs Urban
+    # rural vs urban
     if {'is_rural', 'GrantAmount'}.issubset(df.columns):
         rural_stats = df.groupby('is_rural').agg({
             'GrantAmount': lambda x: pd.to_numeric(x, errors='coerce').mean(),
@@ -172,7 +171,7 @@ def analyze_geographic_patterns(df):
             print(f"  {location}: {row['Count']:,} grants, ${row['Avg_Grant']:,.0f} avg, {row['Pct_Disadvantaged']:.1%} disadvantaged")
 
 def analyze_grant_purposes(df):
-    """Grant purpose analysis"""
+    # grant purpose analysis
     print("\n=== GRANT PURPOSE ANALYSIS ===")
     purpose_cols = list_purpose_binary_cols(df)
     if not purpose_cols:
@@ -186,13 +185,13 @@ def analyze_grant_purposes(df):
         name = clean_purpose_label(col)
         print(f"  {name}: {count:,} ({count/total:.1%})")
     
-    # Co-occurrence analysis
+    # co-occurrence analysis
     print("\nTop purpose combinations:")
     purpose_count_series = df[purpose_cols].sum(axis=1)
     for count, freq in purpose_count_series.value_counts().sort_index().items():
         print(f"  {count} purposes: {freq:,} businesses ({freq/total:.1%})")
     
-    # Purpose patterns by status
+    # purpose patterns by status
     if 'is_disadvantaged' in df.columns:
         print("\nPurpose patterns by disadvantaged status:")
         for status, label in [(0, "Non-disadvantaged"), (1, "Disadvantaged")]:
@@ -204,25 +203,25 @@ def analyze_grant_purposes(df):
                     print(f"    {name}: {pct:.1%}")
 
 def compute_and_save_summary_metrics(df):
-    """Compute and persist comprehensive analysis results."""
+    # compute and persist comprehensive analysis results
     PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Collect all analysis results
+    # collect all analysis results
     summary = {
         "records": int(len(df))
     }
     
-    # Add demographics analysis
+    # add demographics analysis
     demographics_results = analyze_demographics(df)
     if demographics_results:
         summary["demographics"] = demographics_results
     
-    # Add equity analysis 
+    # add equity analysis
     equity_results = analyze_equity(df)
     if equity_results:
         summary["equity"] = equity_results
     
-    # Add basic grant statistics
+    # add basic grant statistics
     if 'GrantAmount' in df.columns:
         grants = pd.to_numeric(df['GrantAmount'], errors='coerce').dropna()
         summary["grant_statistics"] = {
@@ -232,9 +231,8 @@ def compute_and_save_summary_metrics(df):
             "max": int(grants.max())
         }
 
-    # Add data that was previously in plots 01, 02, 03
     
-    # Plot 01 data: Enhanced grant equity details
+    # plot 01 data: enhanced grant equity details
     if {'GrantAmount', 'is_disadvantaged'}.issubset(df.columns):
         df_plot = df.copy()
         df_plot['GrantAmount_num'] = pd.to_numeric(df_plot['GrantAmount'], errors='coerce')
@@ -248,10 +246,8 @@ def compute_and_save_summary_metrics(df):
                 "equity_ratio_median": round(equity_ratio_median, 3),
                 "interpretation": f"Disadvantaged businesses receive {equity_ratio_median:.0%} of non-disadvantaged median funding levels"
             }
-    
-    # Plot 02 data: Demographics percentages (already covered in demographics section)
-    
-    # Plot 03 data: State distribution
+
+    # plot 03 data: state distribution
     if 'BusinessState' in df.columns:
         states = df['BusinessState'].value_counts()
         states_data = []
@@ -266,29 +262,29 @@ def compute_and_save_summary_metrics(df):
             "states": states_data
         }
 
-    # Write summary JSON
+    # write summary json
     (PROCESSED_DATA_DIR / 'analysis_summary.json').write_text(json.dumps(summary, indent=2))
     return summary
 
 def create_individual_plots(df):
-    """Create individual plots for better customization"""
+    # create individual plots for better customization
     
-    # Set global style
+    # set global style
     plt.style.use('seaborn-v0_8')
     sns.set_palette("husl")
     
-    # Ensure output directory exists
+    # ensure output directory exists
     PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
     plots_created = []
     
     
-    # 4. Purpose Profile: Minimal styling
+    # purpose profile: minimal styling
     purpose_cols = list_purpose_binary_cols(df)
     if purpose_cols and 'GrantAmount' in df.columns and 'is_disadvantaged' in df.columns:
         df_temp = df.copy()
         df_temp['GrantAmount_num'] = pd.to_numeric(df_temp['GrantAmount'], errors='coerce')
 
-        # Calculate baselines and groups
+        # calculate baselines and groups
         pooled_sel_baseline = df_temp[purpose_cols].sum().sum() / (len(df_temp) * len(purpose_cols)) * 100.0
         disadv_df = df_temp[df_temp['is_disadvantaged'] == 1]
         non_disadv_df = df_temp[df_temp['is_disadvantaged'] == 0]
@@ -296,7 +292,7 @@ def create_individual_plots(df):
         n_min_disadv = max(300, int(np.ceil(0.005 * n_disadv))) if n_disadv > 0 else 0
         n_min_non_disadv = max(300, int(np.ceil(0.005 * n_non_disadv))) if n_non_disadv > 0 else 0
 
-        # Calculate selection differences for each purpose
+        # calculate selection differences for each purpose
         results = []
         for col in purpose_cols:
             purpose_name = clean_purpose_label(col, keep_underscore=False)
@@ -312,7 +308,7 @@ def create_individual_plots(df):
             })
 
         out = pd.DataFrame(results)
-        # Filter and rank by effect size
+        # filter and rank by effect size
         if n_disadv > 0 and n_non_disadv > 0:
             out = out[(out['nD_sel'] >= n_min_disadv) & (out['nN_sel'] >= n_min_non_disadv)]
         if out.empty:
@@ -320,7 +316,7 @@ def create_individual_plots(df):
         out['effect_score'] = out[['sel_diff_disadv', 'sel_diff_non_disadv']].abs().max(axis=1)
         out = out.sort_values('effect_score', ascending=False).head(10)
 
-        # Create plot
+        # create plot
         x = np.arange(len(out))
         fig, ax = plt.subplots(figsize=(14, 8))
         ax.bar(x - 0.15, out['sel_diff_disadv'], 0.3, color='#45B7D1', label='Disadvantaged Businesses')
@@ -341,19 +337,19 @@ def create_individual_plots(df):
     
     
     
-    # 5. Purpose Co-occurrence Heatmap
+    # purpose co-occurrence heatmap
     purpose_cols = list_purpose_binary_cols(df)
-    if len(purpose_cols) >= 5:  # Only create if we have enough purposes
+    if len(purpose_cols) >= 5:  # only create if we have enough purposes
         plt.figure(figsize=(10, 8))
         
-        # Create correlation matrix for purposes
+        # create correlation matrix for purposes
         purpose_data = df[purpose_cols]
         corr_matrix = purpose_data.corr()
         
-        # Clean up labels
+        # clean up labels
         clean_labels = [clean_purpose_label(col) for col in purpose_cols]
         
-        # Create heatmap - mask only upper triangle, keep diagonal
+        # create heatmap - mask only upper triangle, keep diagonal
         mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=1)  # k=1 keeps diagonal visible
         sns.heatmap(corr_matrix, mask=mask, annot=True, cmap='RdBu_r', center=0, 
                    square=True, fmt='.2f', cbar_kws={"shrink": .8},
@@ -373,12 +369,12 @@ def create_individual_plots(df):
     return plots_created
 
 def run_comprehensive_analysis():
-    """Run complete comprehensive analysis"""
+    # run complete comprehensive analysis
     logger.info("Loading data...")
     df = load_data()
     
     logger.info("Running analysis...")
-    # Persist comprehensive results
+    # persist comprehensive results
     try:
         compute_and_save_summary_metrics(df)
         logger.info("Analysis complete")
@@ -386,7 +382,7 @@ def run_comprehensive_analysis():
         logger.error(f"Analysis failed: {e}")
     
     logger.info("Creating visualizations...")
-    # Visualizations with fallback
+    # visualizations with fallback
     try:
         create_individual_plots(df)
         logger.info("Visualizations complete")
@@ -396,7 +392,7 @@ def run_comprehensive_analysis():
     return df
 
 def create_plots_only():
-    """Create just the individual plots without running full analysis"""
+    # create just the individual plots without running full analysis
     print("=== CREATING PLOTS ONLY ===")
     df = load_data()
     plots_created = create_individual_plots(df)
@@ -404,7 +400,7 @@ def create_plots_only():
     return plots_created
 
 def run_analysis():
-    """Backward compatibility - runs comprehensive analysis"""
+    # backward compatibility
     return run_comprehensive_analysis()
 
 if __name__ == "__main__":
